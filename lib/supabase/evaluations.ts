@@ -11,9 +11,9 @@ export type Evaluation = {
   date: string;               // YYYY-MM-DD
   created_at?: string;
   updated_at?: string;
-  eleves?: { first_name: string; last_name: string } | null; // jointure optionnelle
+  students?: { first_name: string; last_name: string } | null; // jointure optionnelle
   teachers?: { first_name: string; last_name: string } | null; // jointure optionnelle
-  matieres?: { name: string; code?: string } | null;
+  subjects?: { name: string; code?: string } | null;
 };
 
 // Pour le draft de notation (interne au composant)
@@ -29,7 +29,7 @@ const supabase = createClient();
 export const getEvaluations = async (): Promise<Evaluation[]> => {
   const { data, error } = await supabase
     .from('evaluations')      // table PostgreSQL
-    .select('*')
+    .select('*, students(first_name, last_name), teachers(first_name, last_name), subjects(name,code)');
     if(error) throw error
     return data
 }
@@ -43,7 +43,7 @@ export const addEvaluation = async (evaluation: Omit<Evaluation, 'id'>) => {
   return data[0]
 }
 
-export const updateEvaluation = async (id: string, evaluation: Partial<Evaluation>) => {
+export const updateEvaluation = async (id: number, evaluation: Partial<Evaluation>) => {
   const { data, error } = await supabase
     .from('evaluations')
     .update(evaluation)
@@ -53,7 +53,7 @@ export const updateEvaluation = async (id: string, evaluation: Partial<Evaluatio
   return data[0]
 }
 
-export const deleteEvaluation = async (id: string) => {
+export const deleteEvaluation = async (id: number) => {
   const { error } = await supabase
     .from('evaluations')
     .delete()

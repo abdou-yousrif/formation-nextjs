@@ -1,230 +1,239 @@
-// components/ÉlèveForm.tsx
 "use client";
 
-import { useState, useEffect } from "react";
-import { Evaluation, addEvaluation, getEvaluations, updateEvaluation } from "@/lib/supabase/evaluations";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+
+import { Evaluation, addEvaluation, updateEvaluation } from "@/lib/supabase/evaluations";
+import { Eleve } from "@/lib/supabase/eleves";
+import { Matiere } from "@/lib/supabase/matieres";
+import { Teacher } from "@/lib/supabase/teachers";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { X } from "lucide-react";
-import { Eleve, getEleves } from "@/lib/supabase/eleves";
-import { Matiere, getMatieres } from "@/lib/supabase/matieres";
-import { Teacher, getTeachers } from "@/lib/supabase/teachers";
 
 interface Props {
-    evaluation?: Evaluation | null;
+  evaluation?: Evaluation | null;
+  eleves: Eleve[];
+  teachers: Teacher[];
+  matieres: Matiere[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
+type FormData = {
+  eleve_id: string;
+  matiere_id: string;
+  teacher_id: string;
+  type: "Devoir" | "Contrôle" | "Examen";
+  note: string; // 👈 string côté form (important)
+  date: string;
+  commentaire?: string;
+};
 
-export default function EvaluationForm({ evaluation, onClose, onSuccess }: Props) {
+export default function EvaluationForm({
+  evaluation,
+  eleves,
+  teachers,
+  matieres,
+  onClose,
+  onSuccess,
+}: Props) {
   const isEdit = !!evaluation;
+  const [loading, setLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
-    eleve_id: evaluation?.eleve_id || "",
-    matiere_id: evaluation?.matiere_id || "",
-    teacher_id: evaluation?.teacher_id || "",
-    type: evaluation?.type || "",
-    note: evaluation?.note || "",
-    commentaire: evaluation?.commentaire || "",
-    date: evaluation?.date,
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+  } = useForm<FormData>({
+    defaultValues: {
+      eleve_id: evaluation?.eleve_id?.toString() || "",
+      matiere_id: evaluation?.matiere_id?.toString() || "",
+      teacher_id: evaluation?.teacher_id?.toString() || "",
+      type: (evaluation?.type as any) || "Devoir",
+      note: evaluation?.note?.toString() || "",
+      date: evaluation?.date || new Date().toISOString().split("T")[0],
+      commentaire: evaluation?.commentaire || "",
+    },
   });
 
-    const [errors, setErrors] = useState<Record<string, string>>({});
+  // ✅ validation manuelle propre
+  const validate = (data: FormData) => {
+    let isValid = true;
 
-    const [eleves, setEleves] = useState<Eleve[]>([]);
-    const [teachers, setTeachers] = useState<Teacher[]>([]);
-    const [matieres, setMatieres] = useState<Matiere[]>([]);
-  
-    const itemsPerPage = 5;
-  
-   // charger les éleves au montage
-    const fetchEleves = async () => {
-        try {
-            const data = await getEleves();
-            setEleves(data);
-        } catch (error) {
-            console.error("Erreur lors du chargement des élèves :", error);
-        }
-    };
-    const fetchTeachers = async () => {
-        try {
-            const data = await getTeachers();
-            setTeachers(data);
-        } catch (error) {
-            console.error("Erreur lors du chargement des profs :", error);
-        }
-    };
-    const fetchMatieres = async () => {
-        try {
-            const data = await getMatieres();
-            setMatieres(data);
-        } catch (error) {
-            console.error("Erreur lors du chargement des matieres :", error);
-        }
-    };
+    if (!data.eleve_id) {
+      setError("eleve_id", { message: "Élève requis" });
+      isValid = false;
+    }
 
-    useEffect(() => {
-        // Focus sur le premier input au montage
-        document.getElementById("eleve_id")?.focus();
-        fetchEleves();
-        fetchTeachers();
-        fetchMatieres();
-    }, []);
+    if (!data.matiere_id) {
+      setError("matiere_id", { message: "Matière requise" });
+      isValid = false;
+    }
 
-    const validate = () => {
-        const newErrors: Record<string, string> = {};
-        if (!formData.eleve_id.trim()) newErrors.eleve = "Eleve requis";
-        if (!formData.matiere_id.trim()) newErrors.matiere = "Matiere requise";
-        if (!formData.teacher_id.trim()) newErrors.teacher = "Prof requis";
-        if (!formData.type.trim()) newErrors.type = "Type requis";
-        if (!formData.note) newErrors.note = "Note requise";
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+    if (!data.teacher_id) {
+      setError("teacher_id", { message: "Prof requis" });
+      isValid = false;
+    }
 
-    const handleSubmit = async(e: React.FormEvent) => {
-        e.preventDefault();
-        if (!validate()) return;
+    if (!data.note) {
+      setError("note", { message: "Note requise" });
+      isValid = false;
+    } else {
+      const note = Number(data.note);
+      if (isNaN(note) || note < 0 || note > 20) {
+        setError("note", { message: "Note invalide (0-20)" });
+        isValid = false;
+      }
+    }
 
-        // Map formData to match Evaluation fields and include created_at
-        const mappedData = {
-        eleve_id: formData.eleve_id,
-        matiere_id: formData.matiere_id,
-        teacher_id: formData.teacher_id,
-        type: formData.type,
-        note: Number(formData.note),
-        commentaire: formData.commentaire,
-        date: formData.date ?? new Date().toISOString(),
-        created_at: evaluation?.created_at || new Date().toISOString(),
-        };
+    if (!data.date) {
+      setError("date", { message: "Date requise" });
+      isValid = false;
+    }
 
-        if (isEdit && evaluation?.id) {
-        await updateEvaluation(evaluation.id, mappedData);
-        } else {
-        await addEvaluation(mappedData);
-        }
-        onSuccess();
-        onClose();
-    };
+    return isValid;
+  };
+
+  const onSubmit = async (data: FormData) => {
+    if (!validate(data)) return;
+
+    setLoading(true);
+
+    try {
+      const payload = {
+        eleve_id: Number(data.eleve_id),
+        matiere_id: Number(data.matiere_id),
+        teacher_id: Number(data.teacher_id),
+        type: data.type,
+        note: Number(data.note),
+        commentaire: data.commentaire,
+        date: data.date,
+      };
+
+      if (isEdit && evaluation?.id) {
+        await updateEvaluation(evaluation.id, payload);
+      } else {
+        await addEvaluation(payload);
+      }
+
+      onSuccess();
+      onClose();
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || "Erreur");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-background backdrop-blur bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">
-              {isEdit ? "Modifier l'élève" : "Ajouter un élève"}
-            </h2>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </Button>
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-semibold">
+            {isEdit ? "Modifier une évaluation" : "Nouvelle évaluation"}
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X />
+          </Button>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          
+          {/* 👤 Contexte */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Élève</Label>
+              <select {...register("eleve_id")} className="w-full border rounded p-2">
+                <option value="">Choisir</option>
+                {eleves.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.first_name} {e.last_name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-red-500 text-xs">{errors.eleve_id?.message}</p>
+            </div>
+
+            <div>
+              <Label>Matière</Label>
+              <select {...register("matiere_id")} className="w-full border rounded p-2">
+                <option value="">Choisir</option>
+                {matieres.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-red-500 text-xs">{errors.matiere_id?.message}</p>
+            </div>
+
+            <div>
+              <Label>Prof</Label>
+              <select {...register("teacher_id")} className="w-full border rounded p-2">
+                <option value="">Choisir</option>
+                {teachers.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.first_name} {t.last_name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-red-500 text-xs">{errors.teacher_id?.message}</p>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <Label htmlFor="eleve_id">Elève</Label>
-                    <select
-                        id="eleve_id"
-                        value={formData.eleve_id}
-                        onChange={(e) => setFormData({ ...formData, eleve_id: e.target.value })}
-                        className={errors.eleve ? "border-red-500" : ""}
-                    >
-                        <option value="">Sélectionnez un eleve</option>
-                        {eleves.map((eleve) => (
-                        <option key={eleve.id} value={eleve.id}>
-                            {eleve.first_name} {eleve.last_name}
-                        </option>
-                        ))}
-                    </select>
-                    {errors.eleve && <p className="text-red-500 text-xs mt-1">{errors.eleve}</p>}
-                </div>
-                <div>
-                    <Label htmlFor="matiere_id">Matiere</Label>
-                    <select
-                        id="matiere_id"
-                        value={formData.matiere_id}
-                        onChange={(e) => setFormData({ ...formData, matiere_id: e.target.value })}
-                        className={errors.class ? "border-red-500" : ""}
-                    >
-                        <option value="">Sélectionnez une matiere</option>
-                        {matieres.map((matiere) => (
-                        <option key={matiere.id} value={matiere.id}>
-                            {matiere.name}
-                        </option>
-                        ))}
-                    </select>
-                    {errors.matiere && <p className="text-red-500 text-xs mt-1">{errors.matiere}</p>}
-                </div>
-                <div>
-                    <Label htmlFor="teacher_id">Prof</Label>
-                    <select
-                        id="teacher_id"
-                        value={formData.teacher_id}
-                        onChange={(e) => setFormData({ ...formData, teacher_id: e.target.value })}
-                        className={errors.class ? "border-red-500" : ""}
-                    >
-                        <option value="">Sélectionnez un prof</option>
-                        {teachers.map((teacher) => (
-                        <option key={teacher.id} value={teacher.id}>
-                            {teacher.first_name} {teacher.last_name}
-                        </option>
-                        ))}
-                    </select>
-                    {errors.teacher && <p className="text-red-500 text-xs mt-1">{errors.teacher}</p>}
-                </div>
-                <div>
-                    <Label htmlFor="type">Type de note</Label>
-                    <Input
-                    id="type"
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className={errors.type ? "border-red-500" : ""}
-                    />
-                    {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
-                </div>
+          {/* 📝 Évaluation */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Type</Label>
+              <select {...register("type")} className="w-full border rounded p-2">
+                <option value="Devoir">Devoir</option>
+                <option value="Contrôle">Contrôle</option>
+                <option value="Examen">Examen</option>
+              </select>
+            </div>
 
-                <div>
-                    <Label htmlFor="note">Note</Label>
-                    <Input
-                    id="note"
-                    value={formData.note}
-                    onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                    className={errors.note ? "border-red-500" : ""}
-                    />
-                    {errors.note && <p className="text-red-500 text-xs mt-1">{errors.note}</p>}
-                </div>
-                <div>
-                    <Label htmlFor="commentaire">Commentaire</Label>
-                    <Input
-                        id="commentaire"
-                        type="text"
-                        value={formData.commentaire}
-                        onChange={(e) => setFormData({ ...formData, commentaire: e.target.value })}
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="date">Date</Label>
-                    <Input
-                        id="date"
-                        type="text"
-                        value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    />
-                </div>
+            <div>
+              <Label>Note /20</Label>
+              <Input type="number" {...register("note")} />
+              <p className="text-red-500 text-xs">{errors.note?.message}</p>
             </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Annuler
-              </Button>
-              <Button type="submit">
-                {isEdit ? "Modifier" : "Ajouter"}
-              </Button>
-            </div>
-          </form>
-        </div>
+          </div>
+
+          {/* 📅 Meta */}
+          <div>
+            <Label>Date</Label>
+            <Input type="date" {...register("date")} />
+            <p className="text-red-500 text-xs">{errors.date?.message}</p>
+          </div>
+
+          <div>
+            <Label>Commentaire</Label>
+            <Textarea {...register("commentaire")} />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Enregistrement..." : isEdit ? "Modifier" : "Ajouter"}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

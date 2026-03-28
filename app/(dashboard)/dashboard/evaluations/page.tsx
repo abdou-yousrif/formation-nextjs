@@ -22,7 +22,7 @@ export default function EvaluationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const [eleves, setEleves] = useState<Eleve[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -85,8 +85,8 @@ export default function EvaluationsPage() {
   const filteredEvaluations = useMemo(() => {
     return evaluations.filter(
       (s) =>
-        s.eleves?.first_name.toLowerCase().includes(search.toLowerCase()) ||
-        s.eleves?.last_name.toLowerCase().includes(search.toLowerCase()) ||
+        s.students?.first_name.toLowerCase().includes(search.toLowerCase()) ||
+        s.students?.last_name.toLowerCase().includes(search.toLowerCase()) ||
         s.type.toLowerCase().includes(search.toLowerCase())
     );
   }, [evaluations, search]);
@@ -99,7 +99,7 @@ export default function EvaluationsPage() {
 
   const totalPages = Math.ceil(filteredEvaluations.length / itemsPerPage);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     try {
       await deleteEvaluation(id);
       fetchEvaluations();
@@ -155,6 +155,9 @@ export default function EvaluationsPage() {
                                 (isAddModalOpen || editingEvaluation) ? (
                                 <EvaluationForm
                                     evaluation={editingEvaluation}
+                                    eleves={eleves}
+                                    teachers={teachers}
+                                    matieres={matieres}
                                     onClose={() => {
                                     setIsAddModalOpen(false);
                                     setEditingEvaluation(null);

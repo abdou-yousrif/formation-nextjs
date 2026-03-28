@@ -6,7 +6,7 @@ import { IconPencil, IconTrash } from "@tabler/icons-react"; // ou tes icônes
 interface Props {
   evaluations: Evaluation[];
   onEdit: (evaluation: Evaluation) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
 }
 
 export default function EvaluationTable({ evaluations, onEdit, onDelete }: Props) {
@@ -16,8 +16,8 @@ export default function EvaluationTable({ evaluations, onEdit, onDelete }: Props
         <thead className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear">
           <tr>
             <th className="p-4">Elève</th>
-            <th className="p-4">Matiere</th>
             <th className="p-4">Prof</th>
+            <th className="p-4">Matiere</th>
             <th className="p-4">Type de note</th>
             <th className="p-4">Note</th>
             <th className="p-4">Commentaire</th>
@@ -28,9 +28,9 @@ export default function EvaluationTable({ evaluations, onEdit, onDelete }: Props
         <tbody>
           {evaluations.map((evaluation) => (
             <tr key={evaluation.id} className="border-t hover:bg-gray-50">
-              <td className="p-4">{evaluation.eleves?.first_name} {evaluation.eleves?.last_name}</td>
+              <td className="p-4">{evaluation.students?.first_name} {evaluation.students?.last_name}</td>
               <td className="p-4">{evaluation.teachers?.first_name} {evaluation.teachers?.last_name}</td>
-              <td className="p-4">{evaluation.matieres?.name}</td>
+              <td className="p-4">{evaluation.subjects?.name}</td>
               <td className="p-4">{evaluation.type}</td>
               <td className="p-4">{evaluation.note}</td>
               <td className="p-4">{evaluation.commentaire}</td>
