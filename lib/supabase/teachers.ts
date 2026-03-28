@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 
 export type Teacher = {
-  id: string;
+  id: number;
   first_name: string;
   last_name: string;
   email: string;

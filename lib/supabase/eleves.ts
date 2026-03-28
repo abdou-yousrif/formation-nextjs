@@ -3,11 +3,11 @@ import { createClient } from "@/lib/supabase/client";
 const supabase = createClient();
 
 export type Eleve = {
-  id: string
+  id: number
   first_name: string
   last_name: string
   age: number
-  class_id: string
+  class_id: number
   created_at: string
   classes?: { name: string }
 }
@@ -47,4 +47,15 @@ export const deleteEleve = async (id: string) => {
     .eq('id', id)
   if (error) throw error
   return true
+}
+
+export async function getElevesByClass(classId: string): Promise<Eleve[]> {
+  const { data, error } = await supabase
+    .from('eleves')
+    .select('*')
+    .eq('class_id', classId)
+    .order('last_name', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
 }

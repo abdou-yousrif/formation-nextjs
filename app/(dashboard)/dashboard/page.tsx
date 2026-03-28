@@ -1,10 +1,10 @@
 import React from "react"
-import { AppSidebar } from "../../components/app-sidebar"
-import { ChartAreaInteractive } from "../../components/chart-area-interactive"
-import { DataTable } from "../../components/data-table"
-import { SectionCards } from "../../components/section-cards"
-import { SiteHeader } from "../../components/site-header"
-import { SidebarProvider, SidebarInset } from "../../components/ui/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
+import { ChartAreaInteractive } from "@/components/chart-area-interactive"
+import { DataTable } from "@/components/data-table"
+import { SectionCards } from "@/components/section-cards"
+import { SiteHeader } from "@/components/site-header"
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 
 import data from "./data.json"
 
@@ -34,9 +34,5 @@ export default function Page() {
         </div>
       </SidebarInset>
     </SidebarProvider>
-    /* 
-    tooltip="Quick Create"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
-             */
   )
 }

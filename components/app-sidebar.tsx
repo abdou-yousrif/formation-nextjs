@@ -56,7 +56,7 @@ const data = {
     },
     {
       title: "Matières & Évaluations",
-      url: "",
+      url: "/dashboard/evaluations",
       icon: IconBook,
       highlight: false,
     },

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 export type Classe = {
-  id: string
+  id: number
   name: string
   level: string
 }

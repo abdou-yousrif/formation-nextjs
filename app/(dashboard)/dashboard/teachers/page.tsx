@@ -2,78 +2,67 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { Eleve, getEleves, deleteEleve } from "@/lib/supabase/eleves";
-import { Classe, getClasses } from "@/lib/supabase/classes";
-import EleveTable from "../../../components/eleveTable";
-import EleveForm from "../../../components/eleveForm";
-import ConfirmationModal from "../../../components/confirmationModal";
-import { SidebarInset, SidebarProvider } from "../../../components/ui/sidebar";
-import { SiteHeader } from "../../../components/site-header";
-import { AppSidebar } from "../../../components/app-sidebar";
-import GestionListe from "../../../components/gestionListe";
-import { tr } from "zod/v4/locales";
+import { Teacher, getTeachers, deleteTeacher } from "@/lib/supabase/teachers";
+import TeacherTable from "@/components/teachers/teacherTable";
+import TeacherForm from "@/components/teachers/teacherForm";
+import ConfirmationModal from "@/components/confirmationModal";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SiteHeader } from "@/components/site-header";
+import { AppSidebar } from "@/components/app-sidebar";
+import GestionListe from "@/components/gestionListe";
 
 export default function ElevesPage() {
-  const [eleves, setEleves] = useState<Eleve[]>(/* await getEleves() */[]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingEleve, setEditingEleve] = useState<Eleve | null>(null);
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
-  const [classes, setClasses] = useState<Classe[]>([]);
 
   const itemsPerPage = 5;
 
   // charger les élèves au montage
-  const fetchEleves = async () => {
+  const fetchTeachers = async () => {
     try {
-      const data = await getEleves();
-      setEleves(data);
+      const data = await getTeachers();
+      setTeachers(data);
     } catch (error) {
-      console.error("Erreur lors du chargement des élèves :", error);
-    }
-};
- // charger les classes au montage
-const fetchClasses = async () => {
-    try {
-      const data = await getClasses();
-      setClasses(data);
-    } catch (error) {
-      console.error("Erreur lors du chargement des classes :", error);
+      console.error("Erreur lors du chargement des profs :", error);
     }
   };
+
 useEffect(() => {
-    fetchEleves();
-    fetchClasses();
+  const loadData = async () => {
+    await fetchTeachers();
+  };
+
+  loadData();
 }, []);
 
  
 
-  const filteredEleves = useMemo(() => {
-    return eleves.filter(
+  const filteredTeacherss = useMemo(() => {
+    return teachers.filter(
       (s) =>
         s.first_name.toLowerCase().includes(search.toLowerCase()) ||
         s.last_name.toLowerCase().includes(search.toLowerCase())
     );
-  }, [eleves, search]);
+  }, [teachers, search]);
 
   // Pagination
-  const paginatedEleves = useMemo(() => {
+  const paginatedTeachers = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredEleves.slice(start, start + itemsPerPage);
-  }, [filteredEleves, currentPage]);
+    return filteredTeacherss.slice(start, start + itemsPerPage);
+  }, [filteredTeacherss, currentPage]);
 
-  const totalPages = Math.ceil(filteredEleves.length / itemsPerPage);
-
-  /* const refreshEleves = () => setEleves([...getEleves()]); */ // force re-render après CRUD
+  const totalPages = Math.ceil(filteredTeacherss.length / itemsPerPage);
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteEleve(id);
-      fetchEleves();
+      await deleteTeacher(id);
+      fetchTeachers();
     } catch (error) {
-      console.error("Erreur lors de la suppression de l'élève :", error);
+      console.error("Erreur lors de la suppression du prof :", error);
     }
     setDeleteConfirmId(null);
   };
@@ -93,11 +82,11 @@ useEffect(() => {
             <div className="flex flex-1 flex-col">
                 <div className="@container/main flex flex-1 flex-col gap-2">
                     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                        <GestionListe<Eleve>
-                            titre="Gestion des Élèves"
-                            placeholderRecherche="Rechercher par nom, prénom ou classe..."
-                            items={filteredEleves}           // ← ta liste filtrée complète
-                            paginatedItems={paginatedEleves} // ← items de la page actuelle
+                        <GestionListe<Teacher>
+                            titre="Gestion des profs"
+                            placeholderRecherche="Rechercher par nom, prénom "
+                            items={filteredTeacherss}           // ← ta liste filtrée complète
+                            paginatedItems={paginatedTeachers} // ← items de la page actuelle
                             search={search}
                             setSearch={setSearch}
                             currentPage={currentPage}
@@ -105,28 +94,28 @@ useEffect(() => {
                             totalPages={totalPages}
                             onAddClick={() => setIsAddModalOpen(true)}
                             renderTable={() => (
-                                <EleveTable
-                                eleves={paginatedEleves}
-                                onEdit={(eleve) => setEditingEleve(eleve)}
+                                <TeacherTable
+                                teachers={paginatedTeachers}
+                                onEdit={(teacher) => setEditingTeacher(teacher)}
                                 onDelete={(id) => setDeleteConfirmId(id)}
                                 />
                             )}
                             renderCreateUpdateModal={() =>
-                                (isAddModalOpen || editingEleve) ? (
-                                <EleveForm
-                                    eleve={editingEleve}
+                                (isAddModalOpen || editingTeacher) ? (
+                                <TeacherForm
+                                    teacher={editingTeacher}
                                     onClose={() => {
                                     setIsAddModalOpen(false);
-                                    setEditingEleve(null);
+                                    setEditingTeacher(null);
                                     }}
-                                    onSuccess={fetchEleves}
+                                    onSuccess={fetchTeachers}
                                 />
                                 ) : null
                             }
                             renderDeleteConfirmModal={() =>
                                 deleteConfirmId ? (
                                 <ConfirmationModal
-                                    title="Supprimer cet élève ?"
+                                    title="Supprimer ce prof ?"
                                     message="Cette action est irréversible."
                                     onConfirm={() => handleDelete(deleteConfirmId)}
                                     onCancel={() => setDeleteConfirmId(null)}

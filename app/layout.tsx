@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Rethink_Sans } from "next/font/google";
 import "./globals.css";
-import ResponsiveNav from "@/components/Home/Navbar/ResponsiveNav";
+/* import ResponsiveNav from "@/components/Home/Navbar/ResponsiveNav"; */
 import { cookies } from "next/headers";
 
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ export default async function RootLayout({
           enableColorScheme
         >
           <ActiveThemeProvider initialTheme={activeThemeValue}>
-            <ResponsiveNav />
+            {/* <ResponsiveNav /> */}
         {children}
         </ActiveThemeProvider>
         </ThemeProvider>

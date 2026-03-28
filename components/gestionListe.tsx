@@ -20,6 +20,7 @@ interface Props<T> {
   renderTable: () => ReactNode;    // la table (ÉlèveTable, ClasseTable, etc.)
   renderCreateUpdateModal: () => ReactNode; // modal form quand ouvert
   renderDeleteConfirmModal: () => ReactNode; // modal suppression
+  extraHeaderActions?: ReactNode; //ReactNode | ReactNode[];
 }
 
 export default function GestionListe<T>({
@@ -36,6 +37,7 @@ export default function GestionListe<T>({
   renderTable,
   renderCreateUpdateModal,
   renderDeleteConfirmModal,
+  extraHeaderActions,
 }: Props<T>) {
   return (
     <div className="p-6 space-y-6">
@@ -45,6 +47,9 @@ export default function GestionListe<T>({
         <Button onClick={onAddClick}>
           + Ajouter
         </Button>
+        {extraHeaderActions} {/* {Array.isArray(extraHeaderActions) 
+    ? extraHeaderActions 
+    : extraHeaderActions} */}
       </div>
 
       {/* Recherche */}
