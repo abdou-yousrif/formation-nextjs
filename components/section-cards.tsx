@@ -1,7 +1,8 @@
-"use client"
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+"use client";
 
-import { Badge } from "../components/ui/badge"
+import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
+
+import { Badge } from "../components/ui/badge";
 import {
   Card,
   CardAction,
@@ -9,57 +10,115 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "../components/ui/card"
+} from "../components/ui/card";
+
 import { Eleve } from "@/lib/supabase/eleves";
 import { Evaluation } from "@/lib/supabase/evaluations";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
+
 type Props = {
-  eleves : Eleve[];
-  evaluations : Evaluation[];
+  eleves?: Eleve[];
+  evaluations?: Evaluation[];
 };
 
-export function SectionCards({eleves, evaluations}: Props) {
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+export function SectionCards({ eleves, evaluations }: Props) {
 
-  const elevesCeMois = eleves.filter((e) => {
+  const supabase = createClient();
+
+  const [elevesState, setEleves] = useState<Eleve[]>([]);
+  const [evaluationsState, setEvaluations] = useState<Evaluation[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: eleves } = await supabase.from("students").select("*");
+      const { data: evaluations } = await supabase.from("evaluations").select("*");
+
+      setEleves(eleves || []);
+      setEvaluations(evaluations || []);
+    };
+
+    fetchData();
+  }, []);
+  // SAFE DATA
+  const safeEleves = elevesState;
+  const safeEvaluations = evaluationsState;
+
+  console.log("ELEVE FROM STATE:", elevesState);
+  console.log("ELEVE FROM PROPS:", eleves);
+
+  // DATE RANGE
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    0,
+    23,
+    59,
+    59
+  );
+
+  // ÉLÈVES CE MOIS
+  const elevesCeMois = safeEleves.filter((e, i) => {
+    if (!e.created_at) {
+      console.log("❌ created_at NULL:", e);
+      return false;
+    }
+
     const date = new Date(e.created_at);
-    return (
-      date.getMonth() === currentMonth &&
-      date.getFullYear() === currentYear
-    );
+
+    if (isNaN(date.getTime())) {
+      console.log("❌ date invalide:", e.created_at);
+      return false;
+    }
+
+    const inRange = date >= startOfMonth && date <= endOfMonth;
+
+    console.log(`ELEVE ${i}`, {
+      raw: e.created_at,
+      parsed: date,
+      inRange,
+    });
+
+    return inRange;
   }).length;
 
-  // 📝 Évaluations ce mois
-  const evaluationsCeMois = evaluations.filter((e) => {
+  // ÉVALUATIONS CE MOIS
+  const evaluationsCeMois = safeEvaluations.filter((e) => {
+    if (!e.date) return false;
+
     const d = new Date(e.date);
-    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    if (isNaN(d.getTime())) return false;
+
+    return d >= startOfMonth && d <= endOfMonth;
   });
 
-  //Moyenne générale
+  // MOYENNE
   const moyenneGenerale =
-    evaluations.length > 0
+    safeEvaluations.length > 0
       ? (
-          evaluations.reduce((sum, e) => sum + e.note, 0) /
-          evaluations.length
+          safeEvaluations.reduce((sum, e) => sum + e.note, 0) /
+          safeEvaluations.length
         ).toFixed(2)
       : "0";
 
-  //% réussite (>=10)
+  // TAUX RÉUSSITE
   const tauxReussite =
-    evaluations.length > 0
+    safeEvaluations.length > 0
       ? (
-          (evaluations.filter((e) => e.note >= 10).length /
-            evaluations.length) *
+          (safeEvaluations.filter((e) => e.note >= 10).length /
+            safeEvaluations.length) *
           100
         ).toFixed(1)
       : "0";
 
-  //Meilleure classe (simple version)
+  // MEILLEURE CLASSE
   const bestClasse = (() => {
     const map: Record<string, number[]> = {};
 
-    evaluations.forEach((e) => {
-      const classe = (e as any).classe || "Inconnue"; // adapte selon ton modèle
+    safeEvaluations.forEach((e) => {
+      const classe = (e as any).classe || "Inconnue";
       if (!map[classe]) map[classe] = [];
       map[classe].push(e.note);
     });
@@ -78,10 +137,13 @@ export function SectionCards({eleves, evaluations}: Props) {
     return best;
   })();
 
+  // TREND
   const lastMonth = new Date();
-  lastMonth.setMonth(currentMonth - 1);
+  lastMonth.setMonth(now.getMonth() - 1);
 
-  const evalLastMonth = evaluations.filter((e) => {
+  const evalLastMonth = safeEvaluations.filter((e) => {
+    if (!e.date) return false;
+
     const d = new Date(e.date);
     return (
       d.getMonth() === lastMonth.getMonth() &&
@@ -92,13 +154,23 @@ export function SectionCards({eleves, evaluations}: Props) {
   const trend = evaluationsCeMois.length - evalLastMonth;
 
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-      <Card className="@container/card">
+    <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+      <Card>
         <CardHeader>
-          <CardDescription>Nombre total d’élèves</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {elevesCeMois}
-          </CardTitle>
+          <CardDescription>Total des élèves</CardDescription>
+          <CardTitle>{safeEleves.length}</CardTitle>
+          <CardAction>
+            <Badge variant="outline">
+              <IconTrendingUp />
+              +{safeEleves.length}
+            </Badge>
+          </CardAction>
+        </CardHeader>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardDescription>Nouveaux élèves ce mois</CardDescription>
+          <CardTitle>{elevesCeMois}</CardTitle>
           <CardAction>
             <Badge variant="outline">
               <IconTrendingUp />
@@ -106,21 +178,12 @@ export function SectionCards({eleves, evaluations}: Props) {
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Nouveaux élèves ce mois
-          </div>
-          <div className="text-muted-foreground">
-            Données issues des inscriptions
-          </div>
-        </CardFooter>
       </Card>
-      <Card className="@container/card">
+
+      <Card>
         <CardHeader>
-          <CardDescription>Moyenne générale actuelle</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {moyenneGenerale} / 20
-          </CardTitle>
+          <CardDescription>Moyenne générale</CardDescription>
+          <CardTitle>{moyenneGenerale} / 20</CardTitle>
           <CardAction>
             <Badge variant="outline">
               {trend >= 0 ? <IconTrendingUp /> : <IconTrendingDown />}
@@ -128,75 +191,28 @@ export function SectionCards({eleves, evaluations}: Props) {
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Down 20% this period <IconTrendingDown className="size-4" />
-          </div>
-          <div className="text-muted-foreground">
-            Acquisition needs attention
-          </div>
-        </CardFooter>
       </Card>
-      <Card className="@container/card">
+
+      <Card>
         <CardHeader>
-          <CardDescription>% de réussite (10/20)</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-           {tauxReussite}%
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              {trend >= 0 ? <IconTrendingUp /> : <IconTrendingDown />}
-  {trend}
-            </Badge>
-          </CardAction>
+          <CardDescription>Taux de réussite</CardDescription>
+          <CardTitle>{tauxReussite}%</CardTitle>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Strong user retention <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">Engagement exceed targets</div>
-        </CardFooter>
       </Card>
-      <Card className="@container/card">
+
+      <Card>
         <CardHeader>
-          <CardDescription>Nombre d’évaluations saisies ce mois</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {evaluationsCeMois.length}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              {trend >= 0 ? <IconTrendingUp /> : <IconTrendingDown />}
-  {trend}
-            </Badge>
-          </CardAction>
+          <CardDescription>Évaluations ce mois</CardDescription>
+          <CardTitle>{evaluationsCeMois.length}</CardTitle>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Steady performance increase <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">Meets growth projections</div>
-        </CardFooter>
       </Card>
-      <Card className="@container/card">
+
+      <Card>
         <CardHeader>
           <CardDescription>Meilleure classe</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            {bestClasse}
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              {trend >= 0 ? <IconTrendingUp /> : <IconTrendingDown />}
-  {trend}
-            </Badge>
-          </CardAction>
+          <CardTitle>{bestClasse}</CardTitle>
         </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Steady performance increase <IconTrendingUp className="size-4" />
-          </div>
-          <div className="text-muted-foreground">Meets growth projections</div>
-        </CardFooter>
       </Card>
     </div>
-  )
+  );
 }

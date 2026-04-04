@@ -51,7 +51,7 @@ export const deleteEleve = async (id: string) => {
 
 export async function getElevesByClass(classId: string): Promise<Eleve[]> {
   const { data, error } = await supabase
-    .from('eleves')
+    .from('students')
     .select('*')
     .eq('class_id', classId)
     .order('last_name', { ascending: true });

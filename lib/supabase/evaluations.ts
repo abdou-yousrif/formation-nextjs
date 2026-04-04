@@ -18,7 +18,7 @@ export type Evaluation = {
 
 // Pour le draft de notation (interne au composant)
 export type DraftEvaluation = {
-  eleve_id: string;
+  eleve_id: number;
   eleve: { first_name: string; last_name: string };
   note: string;        // string pour input facile
   commentaire: string;
