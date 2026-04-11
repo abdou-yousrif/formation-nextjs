@@ -29,10 +29,64 @@ const supabase = createClient();
 export const getEvaluations = async (): Promise<Evaluation[]> => {
   const { data, error } = await supabase
     .from('evaluations')      // table PostgreSQL
-    .select('*, students(first_name, last_name), teachers(first_name, last_name), subjects(name,code)');
+    .select(`
+      *, 
+      students!inner(first_name, last_name), 
+      teachers!inner(first_name, last_name), 
+      subjects!inner(name,code)
+    `)
+    .order('date', { ascending: false });
     if(error) throw error
     return data
 }
+
+// Bulk insert (le plus important pour la saisie par classe)
+export const addBulkEvaluations = async (
+  evaluations: Array<Omit<Evaluation, 'id' | 'created_at' | 'updated_at'>>
+): Promise<void> => {
+  const { error } = await supabase
+    .from('evaluations')
+    .insert(evaluations);
+
+  if (error) {
+    console.error("Erreur bulk insert:", error);
+    throw error;
+  }
+};
+
+
+// Fonction principale : récupérer les matières enseignées dans une classe (grâce à class_id dans subjects)
+export const getMatieresByClass = async (classId: number): Promise<any[]> => {
+  const { data, error } = await supabase
+    .from('subjects')
+    .select(`
+      id,
+      name,
+      code,
+      coefficient,
+      teachers (first_name, last_name)
+    `)
+    .eq('class_id', classId)
+    .order('name');
+
+  if (error) {
+    console.error("Erreur getMatieresByClass:", error);
+    throw error;
+  }
+  return data || [];
+};
+
+// Récupérer les élèves d'une classe (déjà existant dans eleves.ts, mais pour cohérence)
+export const getElevesByClass = async (classId: number | string) => {
+  const { data, error } = await supabase
+    .from('students')
+    .select('id, first_name, last_name')
+    .eq('class_id', classId)
+    .order('last_name, first_name');
+
+  if (error) throw error;
+  return data || [];
+};
 
 export const addEvaluation = async (evaluation: Omit<Evaluation, 'id'>) => {
   const { data, error } = await supabase
@@ -63,10 +117,10 @@ export const deleteEvaluation = async (id: number) => {
 }
 
 // Bulk insert (Supabase gère ça nativement)
-export async function addBulkEvaluations(evaluations: Array<Omit<Evaluation, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
+/* export async function addBulkEvaluations(evaluations: Array<Omit<Evaluation, 'id' | 'created_at' | 'updated_at'>>): Promise<void> {
   const { error } = await supabase.from('evaluations').insert(evaluations);
   if (error) throw error;
-}
+} */
 
 // Optionnel : get pour vérifier existants (si tu veux éditer)
 export async function getEvaluationsByClassAndMatiere(classId: number, matiereId: number): Promise<Evaluation[]> {
@@ -79,7 +133,7 @@ export async function getEvaluationsByClassAndMatiere(classId: number, matiereId
   return data || [];
 }
 
-export async function getMatieresByClass(classId: number) {
+/* export async function getMatieresByClass(classId: number) {
 
   // 1️⃣ récupérer les élèves de la classe
   const { data: students, error: studentsError } = await supabase
@@ -119,4 +173,4 @@ export async function getMatieresByClass(classId: number) {
   });
 
   return Array.from(unique.values());
-}
+} */

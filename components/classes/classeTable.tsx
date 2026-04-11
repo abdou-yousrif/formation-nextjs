@@ -6,7 +6,7 @@ import { IconPencil, IconTrash } from "@tabler/icons-react"; // ou tes icônes
 interface Props {
   classes: Classe[];
   onEdit: (classe: Classe) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
 }
 
 export default function ClasseTable({ classes, onEdit, onDelete }: Props) {

@@ -49,6 +49,18 @@ const data = {
       highlight: false,
     },
     {
+      title: "Matières",
+      url: "/dashboard/matieres",
+      icon: IconSchool,
+      highlight: false,
+    },
+    {
+      title: "Professeurs",
+      url: "/dashboard/teachers",
+      icon: IconSchool,
+      highlight: false,
+    },
+    {
       title: "Classes",
       url: "/dashboard/classes",
       icon: IconSchool,

@@ -26,7 +26,7 @@ export const addTeacher = async (teacher: Omit<Teacher, 'id'>) => {
   return data[0]
 }
 
-export const updateTeacher = async (id: string, teacher: Partial<Teacher>) => {
+export const updateTeacher = async (id: number, teacher: Partial<Teacher>) => {
   const { data, error } = await supabase
     .from('teachers')
     .update(teacher)
@@ -36,7 +36,7 @@ export const updateTeacher = async (id: string, teacher: Partial<Teacher>) => {
   return data[0]
 }
 
-export const deleteTeacher = async (id: string) => {
+export const deleteTeacher = async (id: number) => {
   const { error } = await supabase
     .from('teachers')
     .delete()

@@ -9,7 +9,7 @@ export type Eleve = {
   age: number
   class_id: number
   created_at: string
-  classes?: { name: string }
+  classes?: { name: string; level?: string }
 }
 
 export const getEleves = async (): Promise<Eleve[]> => {
@@ -30,7 +30,7 @@ export const addEleve = async (eleve: Omit<Eleve, 'id'>) => {
   return data[0]
 }
 
-export const updateEleve = async (id: string, eleve: Partial<Eleve>) => {
+export const updateEleve = async (id: number, eleve: Partial<Eleve>) => {
   const { data, error } = await supabase
     .from('students')
     .update(eleve)
@@ -40,7 +40,7 @@ export const updateEleve = async (id: string, eleve: Partial<Eleve>) => {
   return data[0]
 }
 
-export const deleteEleve = async (id: string) => {
+export const deleteEleve = async (id: number) => {
   const { error } = await supabase
     .from('students')
     .delete()

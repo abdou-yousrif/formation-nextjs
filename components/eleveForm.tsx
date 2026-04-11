@@ -52,7 +52,7 @@ export default function ÉlèveForm({ eleve, onClose, onSuccess }: Props) {
     const newErrors: Record<string, string> = {};
     if (!formData.firstName.trim()) newErrors.firstName = "Prénom requis";
     if (!formData.lastName.trim()) newErrors.lastName = "Nom requis";
-    if (!formData.class_id.trim()) newErrors.class = "Classe requise";
+    if (!formData.class_id) newErrors.class = "Classe requise";
     if (formData.age < 10 || formData.age > 20) newErrors.age = "Âge entre 10 et 20 ans";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -67,7 +67,7 @@ export default function ÉlèveForm({ eleve, onClose, onSuccess }: Props) {
       first_name: formData.firstName,
       last_name: formData.lastName,
       age: formData.age,
-      class_id: formData.class_id,
+      class_id: Number(formData.class_id),
       created_at: eleve?.created_at || new Date().toISOString(),
     };
 

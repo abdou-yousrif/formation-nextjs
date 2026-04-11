@@ -5,16 +5,20 @@ export type Matiere = {
   name: string;
   code?: string | null;
   coefficient?: number;
-  teacher_id?: number;
+  class_id: number;
+  teacher_id: number;
   created_at?: string;
   updated_at?: string;
+  // Jointure optionnelle pour plus de confort
+  classes?: { name: string } | null;
+  teachers?: { first_name: string; last_name: string } | null;
 };
 const supabase = createClient();
 
 export const getMatieres = async (): Promise<Matiere[]> => {
   const { data, error } = await supabase
     .from('subjects')      // table PostgreSQL
-    .select('*')
+    .select('*, classes(name), teachers(first_name, last_name)') // joindre les tables classes et teachers
     if(error) throw error
     return data
 }
@@ -28,7 +32,7 @@ export const addMatiere = async (matiere: Omit<Matiere, 'id'>) => {
   return data[0]
 }
 
-export const updateMatiere = async (id: string, matiere: Partial<Matiere>) => {
+export const updateMatiere = async (id: number, matiere: Partial<Matiere>) => {
   const { data, error } = await supabase
     .from('subjects')
     .update(matiere)
@@ -38,7 +42,7 @@ export const updateMatiere = async (id: string, matiere: Partial<Matiere>) => {
   return data[0]
 }
 
-export const deleteMatiere = async (id: string) => {
+export const deleteMatiere = async (id: number) => {
   const { error } = await supabase
     .from('subjects')
     .delete()
